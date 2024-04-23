@@ -108,7 +108,7 @@ export class LandingPage {
         }
         if (bg) {
             if (/\.mp4$/i.test(bg.url)) {
-                this.video.src = bg.url;
+                this.video.src = `${bg.url}?t=${new Date().getTime()}`;
                 this.dom.style.backgroundImage = '';
             } else {
                 this.video.src = '';
