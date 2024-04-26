@@ -120,7 +120,7 @@ const makeBgItem = (item) => {
                     inp.addEventListener('input', ()=>{
                         item.url = inp.value.trim();
                         saveSettingsDebounced();
-                        lp.updateBackground();
+                        lp.updateBackgroundDebounced();
                     });
                     lw.append(inp);
                 }
@@ -137,7 +137,7 @@ const makeBgItem = (item) => {
                     inp.addEventListener('input', ()=>{
                         item.command = inp.value.trim();
                         saveSettingsDebounced();
-                        lp.updateBackground();
+                        lp.updateBackgroundDebounced();
                     });
                     cw.append(inp);
                 }

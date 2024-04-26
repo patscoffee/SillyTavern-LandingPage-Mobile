@@ -2,7 +2,7 @@ import { characters } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
 import { groups } from '../../../../group-chats.js';
 import { executeSlashCommands } from '../../../../slash-commands.js';
-import { delay } from '../../../../utils.js';
+import { debounce, delay } from '../../../../utils.js';
 import { log } from '../index.js';
 import { Card } from './Card.js';
 
@@ -13,6 +13,7 @@ export class LandingPage {
 
     /**@type {HTMLElement}*/ dom;
     /**@type {HTMLVideoElement}*/ video;
+    /**@type {HTMLVideoElement}*/ intro;
     /**@type {Boolean}*/ isStartingVideo;
 
     /**@type {Boolean}*/ isInputting = false;
@@ -21,6 +22,8 @@ export class LandingPage {
     /**@type {HTMLElement}*/ inputDisplayContainer;
     /**@type {HTMLElement}*/ inputDisplay;
     /**@type {Function}*/ handeInputBound;
+
+    /**@type {Function}*/ updateBackgroundDebounced;
 
 
 
@@ -49,6 +52,7 @@ export class LandingPage {
         }
 
         this.handeInputBound = this.handleInput.bind(this);
+        this.updateBackgroundDebounced = debounce(this.updateBackground.bind(this), 1000);
     }
 
 
@@ -108,8 +112,35 @@ export class LandingPage {
         }
         if (bg) {
             if (/\.mp4$/i.test(bg.url)) {
-                this.video.src = `${bg.url}?t=${new Date().getTime()}`;
+                const url = `${bg.url}?t=${new Date().getTime()}`;
+                const urlIntro = `${bg.url.replace(/(\.[^.]+)$/, '-Intro$1')}?t=${new Date().getTime()}`;
+                const resp = await fetch(url, {
+                    method: 'HEAD',
+                });
+                if (!resp.ok) {
+                    this.video.src = '';
+                    this.dom.style.backgroundImage = '';
+                    toastr.warning(`Could not find background: ${bg.url}`);
+                    return;
+                }
+                const respIntro = await fetch(urlIntro, {
+                    method: 'HEAD',
+                });
                 this.dom.style.backgroundImage = '';
+                if (respIntro) {
+                    this.video.style.opacity = '0';
+                    this.video.autoplay = false;
+                    this.video.src = url;
+                    await new Promise(resolve=>{
+                        this.intro.src = urlIntro;
+                        this.intro.addEventListener('ended', resolve, { once:true });
+                    });
+                    // this.intro.src = '';
+                    this.video.play();
+                    this.video.style.opacity = '1';
+                } else {
+                    this.video.src = url;
+                }
             } else {
                 this.video.src = '';
                 this.dom.style.backgroundImage = `url("${bg.url}")`;
@@ -128,6 +159,14 @@ export class LandingPage {
         const container = document.createElement('div'); {
             container.classList.add('stlp--container');
             container.style.setProperty('--stlp--cardHeight', `${this.settings.cardHeight}px`);
+            const intro = document.createElement('video'); {
+                this.intro = intro;
+                intro.classList.add('stlp--intro');
+                intro.loop = false;
+                intro.muted = true;
+                intro.autoplay = true;
+                container.append(intro);
+            }
             const video = document.createElement('video'); {
                 this.video = video;
                 video.classList.add('stlp--video');

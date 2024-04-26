@@ -55,7 +55,7 @@ html > body.stlp--hideTopBar:has(.stlp--container) > {
 	background-size: cover;
 	background-position: center;
 
-	> .stlp--video {
+	> .stlp--intro, > .stlp--video {
 		display: block;
 		position: absolute;
 		inset: 0;
@@ -64,9 +64,16 @@ html > body.stlp--hideTopBar:has(.stlp--container) > {
 		width: 100vw;
 		object-fit: cover;
 		object-position: center;
+		transition: opacity 200ms;
 		&[src=""] {
 			display: none;
 		}
+	}
+	> .stlp--intro {
+		z-index: -2;
+	}
+	> .stlp--video {
+		z-index: -1;
 	}
 
 	.stlp--menu {
