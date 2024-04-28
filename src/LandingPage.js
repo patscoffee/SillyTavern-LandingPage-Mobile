@@ -101,6 +101,8 @@ export class LandingPage {
     }
     async updateBackground() {
         if (!this.dom) return;
+        if (this.isStartingVideo) return;
+        this.isStartingVideo = true;
         let bg;
         for (const item of this.settings.bgList) {
             let val = (await executeSlashCommands(item.command))?.pipe;
@@ -127,7 +129,7 @@ export class LandingPage {
                     method: 'HEAD',
                 });
                 this.dom.style.backgroundImage = '';
-                if (respIntro) {
+                if (respIntro.ok) {
                     this.video.style.opacity = '0';
                     this.video.autoplay = false;
                     this.video.src = url;
@@ -135,10 +137,13 @@ export class LandingPage {
                         this.intro.src = urlIntro;
                         this.intro.addEventListener('ended', resolve, { once:true });
                     });
-                    // this.intro.src = '';
                     this.video.play();
                     this.video.style.opacity = '1';
+                    await delay(100);
+                    this.intro.style.opacity = '0';
+                    this.intro.src = '';
                 } else {
+                    this.video.style.opacity = '1';
                     this.video.src = url;
                 }
             } else {
@@ -149,6 +154,7 @@ export class LandingPage {
             this.video.src = '';
             this.dom.style.backgroundImage = '';
         }
+        this.isStartingVideo = false;
     }
 
 
