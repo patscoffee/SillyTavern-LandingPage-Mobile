@@ -3,7 +3,7 @@ import { extension_settings } from '../../../../extensions.js';
 import { groups } from '../../../../group-chats.js';
 import { executeSlashCommands } from '../../../../slash-commands.js';
 import { debounce, delay, isTrueBoolean } from '../../../../utils.js';
-import { log } from '../index.js';
+import { debounceAsync, log } from '../index.js';
 import { Card } from './Card.js';
 
 export class LandingPage {
@@ -25,8 +25,12 @@ export class LandingPage {
 
     /**@type {Function}*/ updateBackgroundDebounced;
 
-    /**@type {Object.<string,boolean>}*/ videoCache = {};
-    /**@type {Object.<string,boolean>}*/ introCache = {};
+    /**@type {number}*/ cacheBuster;
+    /**@type {Promise}*/ bgResultUpdatePromise;
+    /**@type {boolean[]}*/ bgResultList = [];
+    /**@type {Object.<string,boolean>}*/ videoUrlCache = {};
+    /**@type {Object.<string,boolean>}*/ introUrlCache = {};
+    /**@type {Object.<string,string>}*/ videoCache = {};
 
 
 
@@ -55,18 +59,20 @@ export class LandingPage {
         }
 
         this.handeInputBound = this.handleInput.bind(this);
-        this.updateBackgroundDebounced = debounce(this.updateBackground.bind(this), 1000);
+        this.updateBackgroundDebounced = debounceAsync(async()=>{
+            await this.preloadBackgrounds();
+            await this.updateBgResultList();
+            await this.updateBackground();
+        }, 1000);
+
+        this.cacheBuster = new Date().getTime();
+        this.updateBgResultList();
     }
 
 
     async load() {
         log('LandingPage.load');
         this.isStartingVideo = false;
-        if (this.dom) {
-            this.dom.style.backgroundColor = window.getComputedStyle(document.body).backgroundColor;
-            await delay(1);
-            this.dom.style.transition = 'transition: background-color 200ms';
-        }
         if (this.settings.numCards > 0) {
             const compCards = (a,b)=>{
                 if (this.settings.showFavorites) {
@@ -95,68 +101,138 @@ export class LandingPage {
         log('LandingPage.load COMPLETED', this);
     }
 
-
-
-
-    async startVideo() {
-        if (this.isStartingVideo) return;
-        this.isStartingVideo = true;
-        while (true) {
-            if (this.video.src == '') break;
-            try {
-                await this.video.play();
-                break;
-            } catch(ex) {
-                await delay(100);
-            }
+    async updateBgResultList() {
+        log('LandingPage.updateBgresultList');
+        if (this.bgResultUpdatePromise) {
+            await this.bgResultUpdatePromise;
+            log('LandingPage.updateBgresultList COMPLETED OLD PROMISE');
+            return;
         }
-        this.isStartingVideo = false;
+        const { promise, resolve } = Promise.withResolvers();
+        this.bgResultUpdatePromise = promise;
+        this.bgResultList = [];
+        for (const item of this.settings.bgList) {
+            let val = (await executeSlashCommands(item.command))?.pipe;
+            let result;
+            try { result = isTrueBoolean(val); } catch { /* empty */ }
+            this.bgResultList.push(result);
+            if (result) break;
+        }
+        resolve();
+        this.bgResultUpdatePromise = null;
+        log('LandingPage.updateBgresultList COMPLETED');
     }
+
+    async preloadBackgrounds() {
+        log('LandingPage.preloadBackgrounds');
+        await Promise.all(this.settings.bgList.map(async(bg)=>this.preloadMedia(bg.url)));
+        log('LandingPage.preloadBackgrounds COMPLETED');
+    }
+    async preloadMedia(url, intro = false) {
+        log('LandingPage.preloadMedia', intro ? 'intro' : '', url);
+        if (this.videoCache[url]) return;
+        const baseUrl = url;
+        try {
+            url = `${baseUrl}?t=${this.cacheBuster}`;
+            if (!this.videoUrlCache[baseUrl]) {
+                log('video check not cached', intro ? 'intro' : '', baseUrl);
+                const resp = await fetch(url, {
+                    method: 'HEAD',
+                });
+                this.videoUrlCache[baseUrl] = resp.ok;
+                if (!resp.ok) {
+                    this.video.src = '';
+                    this.dom.style.backgroundImage = '';
+                    toastr.warning('Could not find background', intro ? 'intro' : '', baseUrl);
+                    this.isStartingVideo = false;
+                    log('LandingPage.preloadMedia ABORTED', intro ? 'intro' : '', baseUrl);
+                    return;
+                }
+                log('video check done', intro ? 'intro' : '', baseUrl);
+            }
+            const media = await fetch(url);
+            const blob = await media.blob();
+            this.videoCache[baseUrl] = URL.createObjectURL(blob);
+            if (!intro && /\.mp4$/i.test(baseUrl)) {
+                const baseUrlIntro = baseUrl.replace(/(\.[^.]+)$/, '-Intro$1');
+                this.preloadMedia(baseUrlIntro, true);
+            }
+        } catch {
+            return;
+        }
+        log('LandingPage.preloadMedia COMPLETED', intro ? 'intro' : '', baseUrl);
+    }
+
+
     async updateBackground() {
         if (!this.dom) return;
         if (this.isStartingVideo) return;
         log('LandingPage.updateBackground');
         this.isStartingVideo = true;
-        let bg;
-        for (const item of this.settings.bgList) {
-            let val = (await executeSlashCommands(item.command))?.pipe;
-            try { val = isTrueBoolean(val); } catch { /* empty */ }
-            if (val) {
-                bg = item;
-                break;
-            }
+        await this.bgResultUpdatePromise ?? Promise.resolve();
+        const idx = this.bgResultList.indexOf(true);
+        this.updateBgResultList();
+        if (idx == -1) {
+            log('no bg true');
+            this.isStartingVideo = false;
+            return;
         }
+        let bg = this.settings.bgList[idx];
+        log('bg decided');
         if (bg) {
+            let missingBlob = false;
+            const baseUrl = bg.url;
+            const url = `${baseUrl}?t=${this.cacheBuster}`;
             if (/\.mp4$/i.test(bg.url)) {
-                const url = `${bg.url}?t=${new Date().getTime()}`;
-                const urlIntro = `${bg.url.replace(/(\.[^.]+)$/, '-Intro$1')}?t=${new Date().getTime()}`;
-                if (!this.videoCache[url]) {
+                const baseUrlIntro = bg.url.replace(/(\.[^.]+)$/, '-Intro$1');
+                const urlIntro = `${baseUrlIntro}?t=${this.cacheBuster}`;
+                if (!this.videoUrlCache[baseUrl]) {
+                    log('video check not cached');
                     const resp = await fetch(url, {
                         method: 'HEAD',
                     });
-                    this.videoCache[url] = resp.ok;
+                    this.videoUrlCache[baseUrl] = resp.ok;
                     if (!resp.ok) {
                         this.video.src = '';
                         this.dom.style.backgroundImage = '';
-                        toastr.warning(`Could not find background: ${bg.url}`);
+                        toastr.warning(`Could not find background: ${baseUrl}`);
                         this.isStartingVideo = false;
                         log('LandingPage.updateBackground ABORTED');
                         return;
                     }
+                    log('video check done');
                 }
                 this.dom.style.backgroundImage = '';
-                if (this.introCache[urlIntro] === undefined) {
+                if (this.introUrlCache[baseUrlIntro] === undefined) {
+                    log('intro check not cached');
                     const respIntro = await fetch(urlIntro, {
                         method: 'HEAD',
                     });
-                    this.introCache[urlIntro] = respIntro.ok;
+                    this.introUrlCache[baseUrlIntro] = respIntro.ok;
+                    log('intro check done');
                 }
-                if (this.introCache[urlIntro]) {
+                if (this.introUrlCache[baseUrlIntro]) {
                     this.video.style.opacity = '0';
                     this.video.autoplay = false;
-                    this.video.src = url;
+                    if (this.videoCache[baseUrl]) {
+                        log('video from blob');
+                        this.video.src = this.videoCache[baseUrl];
+                    } else {
+                        log('video from url');
+                        missingBlob = true;
+                        this.video.src = url;
+                    }
                     await new Promise(resolve=>{
-                        this.intro.src = urlIntro;
+                        log('  play intro');
+                        this.intro.src = this.videoCache[baseUrlIntro] ?? urlIntro;
+                        if (this.videoCache[baseUrlIntro]) {
+                            log('intro from blob');
+                            this.intro.src = this.videoCache[baseUrlIntro];
+                        } else {
+                            log('intro from url');
+                            missingBlob = true;
+                            this.intro.src = urlIntro;
+                        }
                         const resolver = ()=>{
                             this.intro.removeEventListener('ended', resolve);
                             this.intro.removeEventListener('error', resolve);
@@ -165,6 +241,7 @@ export class LandingPage {
                         this.intro.addEventListener('ended', resolver, { once:true });
                         this.intro.addEventListener('error', resolver, { once:true });
                     });
+                    log('  play video');
                     this.video.play();
                     this.video.style.opacity = '1';
                     await delay(100);
@@ -172,11 +249,29 @@ export class LandingPage {
                     this.intro.src = '';
                 } else {
                     this.video.style.opacity = '1';
-                    this.video.src = url;
+                    if (this.videoCache[baseUrl]) {
+                        log('video from blob');
+                        this.video.src = this.videoCache[baseUrl];
+                    } else {
+                        log('video from url');
+                        missingBlob = true;
+                        this.video.src = url;
+                    }
                 }
             } else {
                 this.video.src = '';
-                this.dom.style.backgroundImage = `url("${bg.url}")`;
+                if (this.videoCache[baseUrl]) {
+                    log('img from blob');
+                    this.dom.style.backgroundImage = `url("${this.videoCache[baseUrl]}")`;
+                } else {
+                    log('img from url');
+                    missingBlob = true;
+                    this.dom.style.backgroundImage = `url("${url}")`;
+                }
+            }
+            if (missingBlob) {
+                log('missing blob -> preload');
+                this.preloadBackgrounds();
             }
         } else {
             this.video.src = '';
@@ -194,12 +289,17 @@ export class LandingPage {
         const container = document.createElement('div'); {
             container.classList.add('stlp--container');
             container.style.setProperty('--stlp--cardHeight', `${this.settings.cardHeight}px`);
+            container.style.backgroundColor = window.getComputedStyle(document.body).backgroundColor;
+            // await delay(1);
+            container.style.transition = 'transition: background-color 200ms';
             const intro = document.createElement('video'); {
                 this.intro = intro;
                 intro.classList.add('stlp--intro');
                 intro.loop = false;
                 intro.muted = true;
                 intro.autoplay = true;
+                intro.addEventListener('play', ()=>log('intro.play'));
+                intro.addEventListener('playing', ()=>log('intro.playing'));
                 container.append(intro);
             }
             const video = document.createElement('video'); {
@@ -208,6 +308,8 @@ export class LandingPage {
                 video.loop = true;
                 video.muted = true;
                 video.autoplay = true;
+                video.addEventListener('play', ()=>log('video.play'));
+                video.addEventListener('playing', ()=>log('video.playing'));
                 container.append(video);
             }
             this.dom = container;
