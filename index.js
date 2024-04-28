@@ -30,8 +30,10 @@ const onChatChanged = async(chatFile)=>{
     if (chatFile === undefined && extension_settings.landingPage?.isEnabled) {
         log('LANDING');
         document.querySelector('#sheld').style.display = 'none';
-        await lp.load();
         document.body.append(await lp.render());
+        lp.updateBackground();
+        await lp.load();
+        lp.renderContent();
     } else {
         lp.settings.lastChat.character = characters[getContext().characterId]?.avatar;
         lp.settings.lastChat.group = getContext().groupId;
@@ -414,7 +416,7 @@ const initSettings = () => {
         stop: ()=>{
             lp.settings.bgList.sort((a,b)=>Array.from(bgList.children).findIndex(it=>it.item==a)-Array.from(bgList.children).findIndex(it=>it.item==b));
             saveSettingsDebounced();
-            lp.updateBackground();
+            lp.updateBackgroundDebounced();
         },
     });
 };

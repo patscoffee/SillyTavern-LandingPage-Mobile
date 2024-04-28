@@ -2,7 +2,7 @@ import { characters } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
 import { groups } from '../../../../group-chats.js';
 import { executeSlashCommands } from '../../../../slash-commands.js';
-import { debounce, delay } from '../../../../utils.js';
+import { debounce, delay, isTrueBoolean } from '../../../../utils.js';
 import { log } from '../index.js';
 import { Card } from './Card.js';
 
@@ -24,6 +24,9 @@ export class LandingPage {
     /**@type {Function}*/ handeInputBound;
 
     /**@type {Function}*/ updateBackgroundDebounced;
+
+    /**@type {Object.<string,boolean>}*/ videoCache = {};
+    /**@type {Object.<string,boolean>}*/ introCache = {};
 
 
 
@@ -58,28 +61,38 @@ export class LandingPage {
 
     async load() {
         log('LandingPage.load');
-        const compCards = (a,b)=>{
-            if (this.settings.showFavorites) {
-                if (a.fav && !b.fav) return -1;
-                if (!a.fav && b.fav) return 1;
-            }
-            return b.date_last_chat - a.date_last_chat;
-        };
-        const cards = await Promise.all(
-            [...characters, ...groups]
-                .filter(it=>!this.settings.onlyFavorites || it.fav)
-                .toSorted(compCards)
-                .slice(0, this.settings.numCards)
-                .map(it=>{
-                    const card = new Card(it);
-                    card.onOpenChat = ()=>{
-                        this.dom.classList.add('stlp--busy');
-                    };
-                    return card.load();
-                }),
-        );
-        this.cards = cards;
-        log('LandingPage.load COMPLETED', this, cards);
+        this.isStartingVideo = false;
+        if (this.dom) {
+            this.dom.style.backgroundColor = window.getComputedStyle(document.body).backgroundColor;
+            await delay(1);
+            this.dom.style.transition = 'transition: background-color 200ms';
+        }
+        if (this.settings.numCards > 0) {
+            const compCards = (a,b)=>{
+                if (this.settings.showFavorites) {
+                    if (a.fav && !b.fav) return -1;
+                    if (!a.fav && b.fav) return 1;
+                }
+                return b.date_last_chat - a.date_last_chat;
+            };
+            const cards = await Promise.all(
+                [...characters, ...groups]
+                    .filter(it=>!this.settings.onlyFavorites || it.fav)
+                    .toSorted(compCards)
+                    .slice(0, this.settings.numCards)
+                    .map(it=>{
+                        const card = new Card(it);
+                        card.onOpenChat = ()=>{
+                            this.dom.classList.add('stlp--busy');
+                        };
+                        return card.load();
+                    }),
+            );
+            this.cards = cards;
+        } else {
+            this.cards = [];
+        }
+        log('LandingPage.load COMPLETED', this);
     }
 
 
@@ -102,11 +115,12 @@ export class LandingPage {
     async updateBackground() {
         if (!this.dom) return;
         if (this.isStartingVideo) return;
+        log('LandingPage.updateBackground');
         this.isStartingVideo = true;
         let bg;
         for (const item of this.settings.bgList) {
             let val = (await executeSlashCommands(item.command))?.pipe;
-            try { val = JSON.parse(val); } catch { /* empty */ }
+            try { val = isTrueBoolean(val); } catch { /* empty */ }
             if (val) {
                 bg = item;
                 break;
@@ -116,26 +130,40 @@ export class LandingPage {
             if (/\.mp4$/i.test(bg.url)) {
                 const url = `${bg.url}?t=${new Date().getTime()}`;
                 const urlIntro = `${bg.url.replace(/(\.[^.]+)$/, '-Intro$1')}?t=${new Date().getTime()}`;
-                const resp = await fetch(url, {
-                    method: 'HEAD',
-                });
-                if (!resp.ok) {
-                    this.video.src = '';
-                    this.dom.style.backgroundImage = '';
-                    toastr.warning(`Could not find background: ${bg.url}`);
-                    return;
+                if (!this.videoCache[url]) {
+                    const resp = await fetch(url, {
+                        method: 'HEAD',
+                    });
+                    this.videoCache[url] = resp.ok;
+                    if (!resp.ok) {
+                        this.video.src = '';
+                        this.dom.style.backgroundImage = '';
+                        toastr.warning(`Could not find background: ${bg.url}`);
+                        this.isStartingVideo = false;
+                        log('LandingPage.updateBackground ABORTED');
+                        return;
+                    }
                 }
-                const respIntro = await fetch(urlIntro, {
-                    method: 'HEAD',
-                });
                 this.dom.style.backgroundImage = '';
-                if (respIntro.ok) {
+                if (this.introCache[urlIntro] === undefined) {
+                    const respIntro = await fetch(urlIntro, {
+                        method: 'HEAD',
+                    });
+                    this.introCache[urlIntro] = respIntro.ok;
+                }
+                if (this.introCache[urlIntro]) {
                     this.video.style.opacity = '0';
                     this.video.autoplay = false;
                     this.video.src = url;
                     await new Promise(resolve=>{
                         this.intro.src = urlIntro;
-                        this.intro.addEventListener('ended', resolve, { once:true });
+                        const resolver = ()=>{
+                            this.intro.removeEventListener('ended', resolve);
+                            this.intro.removeEventListener('error', resolve);
+                            resolve();
+                        };
+                        this.intro.addEventListener('ended', resolver, { once:true });
+                        this.intro.addEventListener('error', resolver, { once:true });
                     });
                     this.video.play();
                     this.video.style.opacity = '1';
@@ -155,6 +183,7 @@ export class LandingPage {
             this.dom.style.backgroundImage = '';
         }
         this.isStartingVideo = false;
+        log('LandingPage.updateBackground COMPLETED');
     }
 
 
@@ -181,48 +210,7 @@ export class LandingPage {
                 video.autoplay = true;
                 container.append(video);
             }
-            const wrap = document.createElement('div'); {
-                wrap.classList.add('stlp--wrapper');
-                if (this.settings.highlightFavorites) {
-                    wrap.classList.add('stlp--highlightFavorites');
-                }
-                wrap.setAttribute('data-displayStyle', this.settings.displayStyle);
-                const root = document.createElement('div'); {
-                    root.classList.add('stlp--cards');
-                    const els = await Promise.all(this.cards.map(async(card)=>{
-                        return await card.render(this.settings);
-                    }));
-                    els.forEach(it=>root.append(it));
-                    wrap.append(root);
-                }
-                container.append(wrap);
-            }
-            const menu = document.createElement('ul'); {
-                menu.classList.add('stlp--menu');
-                this.settings.menuList.forEach(item=>{
-                    const li = document.createElement('li'); {
-                        li.classList.add('stlp--item');
-                        li.setAttribute('data-stlp--label', item.label);
-                        li.textContent = item.label;
-                        li.addEventListener('click', async()=>{
-                            await executeSlashCommands(item.command);
-                        });
-                        menu.append(li);
-                    }
-                });
-                container.append(menu);
-            }
-            const inputDisplayContainer = document.createElement('div'); {
-                this.inputDisplayContainer = inputDisplayContainer;
-                inputDisplayContainer.classList.add('stlp--inputDisplayContainer');
-                const inputDisplay = document.createElement('div'); {
-                    this.inputDisplay = inputDisplay;
-                    inputDisplay.classList.add('stlp--inputDisplay');
-                    inputDisplayContainer.append(inputDisplay);
-                }
-            }
             this.dom = container;
-            this.updateBackground();
         }
 
         window.addEventListener('keyup', this.handeInputBound);
@@ -233,6 +221,51 @@ export class LandingPage {
         window.removeEventListener('keyup',this.handeInputBound);
         this.dom?.remove();
         this.dom = null;
+        this.isStartingVideo = false;
+    }
+
+    async renderContent() {
+        const container = this.dom;
+        const wrap = document.createElement('div'); {
+            wrap.classList.add('stlp--wrapper');
+            if (this.settings.highlightFavorites) {
+                wrap.classList.add('stlp--highlightFavorites');
+            }
+            wrap.setAttribute('data-displayStyle', this.settings.displayStyle);
+            const root = document.createElement('div'); {
+                root.classList.add('stlp--cards');
+                const els = await Promise.all(this.cards.map(async(card)=>{
+                    return await card.render(this.settings);
+                }));
+                els.forEach(it=>root.append(it));
+                wrap.append(root);
+            }
+            container.append(wrap);
+        }
+        const menu = document.createElement('ul'); {
+            menu.classList.add('stlp--menu');
+            this.settings.menuList.forEach(item=>{
+                const li = document.createElement('li'); {
+                    li.classList.add('stlp--item');
+                    li.setAttribute('data-stlp--label', item.label);
+                    li.textContent = item.label;
+                    li.addEventListener('click', async()=>{
+                        await executeSlashCommands(item.command);
+                    });
+                    menu.append(li);
+                }
+            });
+            container.append(menu);
+        }
+        const inputDisplayContainer = document.createElement('div'); {
+            this.inputDisplayContainer = inputDisplayContainer;
+            inputDisplayContainer.classList.add('stlp--inputDisplayContainer');
+            const inputDisplay = document.createElement('div'); {
+                this.inputDisplay = inputDisplay;
+                inputDisplay.classList.add('stlp--inputDisplay');
+                inputDisplayContainer.append(inputDisplay);
+            }
+        }
     }
 
 
