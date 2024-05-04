@@ -141,10 +141,6 @@ export class LandingPage {
                 });
                 this.videoUrlCache[baseUrl] = resp.ok;
                 if (!resp.ok) {
-                    this.video.src = '';
-                    this.dom.style.backgroundImage = '';
-                    toastr.warning('Could not find background', intro ? 'intro' : '', baseUrl);
-                    this.isStartingVideo = false;
                     log('LandingPage.preloadMedia ABORTED', intro ? 'intro' : '', baseUrl);
                     return;
                 }
