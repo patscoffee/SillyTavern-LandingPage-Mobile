@@ -2,7 +2,7 @@ import { characters, eventSource, event_types, getRequestHeaders, saveSettingsDe
 import { extension_settings, getContext } from '../../../extensions.js';
 import { groups, openGroupById } from '../../../group-chats.js';
 import { registerSlashCommand } from '../../../slash-commands.js';
-import { getSortableDelay } from '../../../utils.js';
+import { getSortableDelay, isTrueBoolean } from '../../../utils.js';
 import { LandingPage } from './src/LandingPage.js';
 
 
@@ -513,3 +513,41 @@ const continueLastChat = async()=>{
     toastr.warning('no last chat');
 };
 registerSlashCommand('lp-continue', ()=>continueLastChat(), [], ' – open the last active chat.', true, true);
+
+const lpSetKey = {
+    setCheckbox: (key, value)=>{
+        document.querySelector(`#stlp--${key}`).checked = isTrueBoolean(value);
+        document.querySelector(`#stlp--${key}`).dispatchEvent(new Event('click'));
+    },
+    setInput: (key, value)=>{
+        document.querySelector(`#stlp--${key}`).value = value;
+        document.querySelector(`#stlp--${key}`).dispatchEvent(new Event('change'));
+        document.querySelector(`#stlp--${key}`).dispatchEvent(new Event('input'));
+    },
+    isEnabled: (value)=>lpSetKey.setCheckbox('isEnabled', value),
+    hideTopBar: (value)=>lpSetKey.setCheckbox('hideTopBar', value),
+    displayStyle: (value)=>lpSetKey.setInput('displayStyle', value),
+    cardHeight: (value)=>lpSetKey.setInput('cardHeight', value),
+    showFavorites: (value)=>lpSetKey.setCheckbox('showFavorites', value),
+    onlyFavorites: (value)=>lpSetKey.setCheckbox('onlyFavorites', value),
+    highlightFavorites: (value)=>lpSetKey.setCheckbox('highlightFavorites', value),
+    numCards: (value)=>lpSetKey.setInput('numCards', value),
+    numAvatars: (value)=>lpSetKey.setInput('numAvatars', value),
+    showExpression: (value)=>lpSetKey.setCheckbox('showExpression', value),
+    extensions: (value)=>lpSetKey.setInput('extensions', value),
+    expression: (value)=>lpSetKey.setInput('expression', value),
+};
+const lpSetCallback = (args, value)=>{
+    const [_, key, val] = /^(\S+)(?:\s+(.+))?$/.exec(value);
+    if (val !== undefined) {
+        lpSetKey[key]?.(val);
+    }
+    return JSON.stringify(lp.settings[key]);
+};
+registerSlashCommand('lp-set',
+    (args, value)=>lpSetCallback(args, value),
+    [],
+    `(${Object.keys(lpSetKey).join('|')}) (new value) – change LandingPage settings.`,
+    true,
+    true,
+);
