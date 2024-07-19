@@ -72,7 +72,7 @@ export class LandingPage {
 
     async load() {
         log('LandingPage.load');
-        this.isStartingVideo = false;
+        // this.isStartingVideo = false;
         if (this.settings.numCards > 0) {
             const compCards = (a,b)=>{
                 if (this.settings.showFavorites) {

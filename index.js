@@ -47,14 +47,17 @@ export function debounceAsync(func, timeout = 300) {
 
 /**@type {LandingPage} */
 let lp;
+let appReady = false;
 const onChatChanged = async(chatFile)=>{
     if (chatFile === undefined && extension_settings.landingPage?.isEnabled) {
         log('LANDING');
         document.querySelector('#sheld').style.display = 'none';
         document.body.append(await lp.render());
         lp.updateBackground();
-        await lp.load();
-        lp.renderContent();
+        if (appReady) {
+            await lp.load();
+            lp.renderContent();
+        }
     } else {
         lp.settings.lastChat.character = characters[getContext().characterId]?.avatar;
         lp.settings.lastChat.group = getContext().groupId;
@@ -449,6 +452,13 @@ const init = () => {
     onChatChanged();
 };
 init();
+eventSource.once(event_types.APP_READY, async()=>{
+    if (getContext().characterId === undefined && extension_settings.landingPage?.isEnabled) {
+        await lp.load();
+        lp.renderContent();
+    }
+    appReady = true;
+});
 eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
 
 
