@@ -1,5 +1,5 @@
 import { characters, getRequestHeaders, messageFormatting, selectCharacterById, setActiveCharacter, setActiveGroup, setCharacterId, substituteParams } from '../../../../../script.js';
-import { openGroupById } from '../../../../group-chats.js';
+import { groups, openGroupById } from '../../../../group-chats.js';
 import { applyTagsOnCharacterSelect } from '../../../../tags.js';
 import { Member } from './Member.js';
 import { waitForFrame } from './wait.js';
@@ -19,6 +19,7 @@ export class Card {
 
     /**@type {Member[]}*/ lastMembers;
     /**@type {Object}*/ lastMessage;
+    /**@type {Object}*/ chatMetadata;
     /**@type {HTMLImageElement}*/ avatarImg;
 
     /**@type {Boolean}*/ isLoaded = false;
@@ -98,6 +99,7 @@ export class Card {
             if (!Array.isArray(mesList)) mesList = [];
             this.updateLastMembers(mesList);
             this.lastMessage = mesList.slice(-1)[0];
+            this.chatMetadata = this.isGroup ? groups.find(it=>it.name == this.name).chat_metadata : mesList[0]?.['chat_metadata'] ?? {};
         }
         return this;
     }
@@ -192,7 +194,7 @@ export class Card {
                     ava.classList.add('stlp--avatar');
                     if (settings.showExpression) {
                         await Promise.all(this.getLastMembers(settings.numAvatars).map(async(mem)=>{
-                            const memImg = await mem.loadExpression(settings.expression);
+                            const memImg = await mem.loadExpression(settings.expression, this.chatMetadata?.triggerCards?.costumes?.[mem.name]);
                             const img = document.createElement('img'); {
                                 img.classList.add('stlp--avatarImg');
                                 img.style.width = `calc(var(--stlp--cardHeight) / ${memImg.naturalHeight} * ${memImg.naturalWidth})`;

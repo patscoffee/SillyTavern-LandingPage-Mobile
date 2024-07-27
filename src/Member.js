@@ -56,13 +56,13 @@ export class Member {
             img.src = `/characters/${this.avatar}`;
         });
     }
-    async loadExpression(expr) {
+    async loadExpression(expr, costume = null) {
         return new Promise(async(resolve, reject)=>{
             const img = new Image();
             this.expressionImg = img;
             img.addEventListener('load', ()=>resolve(img));
             img.addEventListener('error', ()=>reject());
-            const url = await findExpression(this.name);
+            const url = await findExpression(costume ?? this.name);
             if (url) {
                 img.src = url;
             } else {
