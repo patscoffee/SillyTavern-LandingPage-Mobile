@@ -270,6 +270,13 @@ html > body.stlp--hideTopBar:has(.stlp--container) > #top-bar:hover + #top-setti
   background-color: var(--SmartThemeChatTintColor);
   background-color: var(--SmartThemeUserMesBlurTintColor);
 }
+.stlp--container .stlp--inputBlocker {
+  display: none;
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(10px) saturate(0.5);
+  z-index: 2001;
+}
 .stlp--container .stlp--wrapper[data-displayStyle="Center"] > .stlp--cards {
   bottom: calc((100svh - var(--topBarBlockSize)) / 2);
 }

@@ -17,11 +17,14 @@ export class LandingPage {
     /**@type {Boolean}*/ isStartingVideo;
 
     /**@type {Boolean}*/ isInputting = false;
-    /**@type {String}*/ input = '';
-    /**@type {Number}*/ inputTime = 0;
-    /**@type {HTMLElement}*/ inputDisplayContainer;
-    /**@type {HTMLElement}*/ inputDisplay;
-    /**@type {Function}*/ handeInputBound;
+    /**@type {HTMLElement} */ inputBlocker;
+    /**@type {HTMLElement} */ sheld;
+    /**@type {HTMLTextAreaElement} */ chatInput;
+    // /**@type {String}*/ input = '';
+    // /**@type {Number}*/ inputTime = 0;
+    // /**@type {HTMLElement}*/ inputDisplayContainer;
+    // /**@type {HTMLElement}*/ inputDisplay;
+    /**@type {Function}*/ handleInputBound;
 
     /**@type {Function}*/ updateBackgroundDebounced;
 
@@ -58,7 +61,7 @@ export class LandingPage {
             document.body.classList.add('stlp--hideTopBar');
         }
 
-        this.handeInputBound = this.handleInput.bind(this);
+        this.handleInputBound = this.handleInput.bind(this);
         this.updateBackgroundDebounced = debounceAsync(async()=>{
             await this.preloadBackgrounds();
             await this.updateBgResultList();
@@ -67,6 +70,9 @@ export class LandingPage {
 
         this.cacheBuster = new Date().getTime();
         this.updateBgResultList();
+
+        this.sheld = document.querySelector('#sheld');
+        this.chatInput = document.querySelector('#send_textarea');
     }
 
 
@@ -308,18 +314,27 @@ export class LandingPage {
                 video.addEventListener('playing', ()=>log('video.playing'));
                 container.append(video);
             }
+            const blocker = document.createElement('div'); {
+                this.inputBlocker = blocker;
+                blocker.classList.add('stlp--inputBlocker');
+                blocker.addEventListener('click', ()=>{
+                    this.endInput();
+                });
+                container.append(blocker);
+            }
             this.dom = container;
         }
 
-        window.addEventListener('keyup', this.handeInputBound);
+        window.addEventListener('keyup', this.handleInputBound);
 
         return this.dom;
     }
     unrender() {
-        window.removeEventListener('keyup',this.handeInputBound);
+        window.removeEventListener('keyup',this.handleInputBound);
         this.dom?.remove();
         this.dom = null;
         this.isStartingVideo = false;
+        this.endInput();
     }
 
     async renderContent() {
@@ -371,10 +386,8 @@ export class LandingPage {
 
     endInput() {
         this.isInputting = false;
-        this.input = '';
-        this.inputTime = 0;
-        this.inputDisplay.textContent = '';
-        this.inputDisplayContainer.remove();
+        this.sheld.style.display = 'none';
+        this.inputBlocker.style.display = '';
     }
     /**
      *
@@ -383,32 +396,19 @@ export class LandingPage {
      */
     handleInput(evt) {
         let key = evt.key;
-        if (this.isInputting) {
-            if (key == 'Escape') {
-                this.endInput();
-                return;
-            }
-            if (key == 'Enter' && !evt.shiftKey) {
-                document.querySelector('#send_textarea').value = this.input;
-                document.querySelector('#send_but').click();
-                this.endInput();
-                return;
-            }
-            if (key == 'Backspace') {
-                this.input = this.input.slice(0, -1);
-                key = '';
-            }
-        }
-        if (key == 'Enter' && evt.shiftKey) key = '\n';
-        if (key.length > 1 || evt.ctrlKey || evt.altKey) return;
         if (!this.isInputting) {
-            log('ACTIVE', document.activeElement);
+            if (key.length > 1 || evt.ctrlKey || evt.altKey) return;
             if (document.activeElement != document.body) return;
+            toastr.info('Click outside the chat to close chat.', 'Landing Page');
             this.isInputting = true;
-            this.dom.append(this.inputDisplayContainer);
+            this.chatInput.value += key;
+            this.inputBlocker.style.display = 'block';
+            this.sheld.style.display = '';
+            this.sheld.style.zIndex = '2002';
+            // this.sheld.style.alignItems = 'center';
+            // this.sheld.style.width = 'calc(100vw - var(--nav-bar-width, 0))';
         }
-        this.input += key;
-        this.inputTime = new Date().getTime();
-        this.inputDisplay.textContent = this.input;
+        // this.inputTime = new Date().getTime();
+        // this.inputDisplay.textContent = this.input;
     }
 }
