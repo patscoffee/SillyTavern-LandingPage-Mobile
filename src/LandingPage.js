@@ -325,12 +325,12 @@ export class LandingPage {
             this.dom = container;
         }
 
-        window.addEventListener('keyup', this.handleInputBound);
+        window.addEventListener('keydown', this.handleInputBound);
 
         return this.dom;
     }
     unrender() {
-        window.removeEventListener('keyup',this.handleInputBound);
+        window.removeEventListener('keydown',this.handleInputBound);
         this.dom?.remove();
         this.dom = null;
         this.isStartingVideo = false;
@@ -401,10 +401,11 @@ export class LandingPage {
             if (document.activeElement != document.body) return;
             toastr.info('Click outside the chat to close chat.', 'Landing Page');
             this.isInputting = true;
-            this.chatInput.value += key;
+            // this.chatInput.value += key;
             this.inputBlocker.style.display = 'block';
             this.sheld.style.display = '';
             this.sheld.style.zIndex = '2002';
+            this.chatInput.focus();
             // this.sheld.style.alignItems = 'center';
             // this.sheld.style.width = 'calc(100vw - var(--nav-bar-width, 0))';
         }
