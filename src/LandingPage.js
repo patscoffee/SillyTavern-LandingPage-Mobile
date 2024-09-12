@@ -386,8 +386,12 @@ export class LandingPage {
 
     endInput() {
         this.isInputting = false;
-        this.sheld.style.display = 'none';
-        this.inputBlocker.style.display = '';
+        if (this.inputBlocker) {
+            this.inputBlocker.style.display = '';
+        }
+        if (this.settings.isEnabled) {
+            this.sheld.style.display = 'none';
+        }
     }
     /**
      *
