@@ -277,6 +277,9 @@ html > body.stlp--hideTopBar:has(.stlp--container) > #top-bar:hover + #top-setti
   backdrop-filter: blur(10px) saturate(0.5);
   z-index: 2001;
 }
+html > body.no-blur .stlp--container .stlp--inputBlocker {
+  backdrop-filter: blur(40px) saturate(0.25) !important;
+}
 .stlp--container .stlp--wrapper[data-displayStyle="Center"] > .stlp--cards {
   bottom: calc((100svh - var(--topBarBlockSize)) / 2);
 }
