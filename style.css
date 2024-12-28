@@ -435,3 +435,36 @@ html > body.no-blur .stlp--container .stlp--inputBlocker {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   white-space: pre-wrap;
 }
+.stlp--fpc {
+  position: absolute;
+  inset: 0;
+  z-index: 50000;
+  opacity: 0.6;
+  pointer-events: none;
+}
+.stlp--fpc--prefsTrigger {
+  position: absolute;
+  top: 0.25em;
+  right: 0.25em;
+  font-size: 2em;
+  cursor: pointer;
+  opacity: 0.25;
+  transition: 200ms;
+  z-index: 60000;
+}
+.stlp--fpc--prefsTrigger:hover {
+  opacity: 1;
+}
+.stlp--fpc--prefsPanel {
+  position: absolute;
+  top: 2.5em;
+  right: 0.5em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  z-index: 60000;
+}
+.stlp--fpc--prefsGroup {
+  display: flex;
+  align-items: center;
+}

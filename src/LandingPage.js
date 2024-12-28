@@ -1,9 +1,9 @@
-import { characters } from '../../../../../script.js';
+import { characters, saveSettingsDebounced } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
 import { groups } from '../../../../group-chats.js';
 import { executeSlashCommands } from '../../../../slash-commands.js';
 import { debounce, delay, isTrueBoolean } from '../../../../utils.js';
-import { debounceAsync, log } from '../index.js';
+import { appReady, debounceAsync, log } from '../index.js';
 import { Card } from './Card.js';
 
 export class LandingPage {
@@ -34,6 +34,8 @@ export class LandingPage {
     /**@type {Object.<string,boolean>}*/ videoUrlCache = {};
     /**@type {Object.<string,boolean>}*/ introUrlCache = {};
     /**@type {Object.<string,string>}*/ videoCache = {};
+
+    /**@type {import('./FizzPopCrackle/FPC.js').FPC}*/ fpc;
 
 
 
@@ -322,6 +324,89 @@ export class LandingPage {
                 });
                 container.append(blocker);
             }
+            const d = Number(new Date().toISOString().slice(5, 10).replace('-', ''));
+            if (d >= 1231 || d < 102) {
+                import('./FizzPopCrackle/FPC.js').then(async(fpcModule)=>{
+                    const fpc = new fpcModule.FPC();
+                    this.fpc = fpc;
+                    await fpc.loadPromise;
+                    container.append(fpc.canvas);
+                    while (!appReady) await delay(100);
+                    await delay(1000);
+                    await fpc.start();
+                    { // prefs
+                        let panel;
+                        const prefsTrigger = document.createElement('div'); {
+                            prefsTrigger.classList.add('fa-solid', 'fa-fw', 'fa-volume-high');
+                            prefsTrigger.classList.add('stlp--fpc--prefsTrigger');
+                            prefsTrigger.addEventListener('click', ()=>{
+                                if (panel) {
+                                    panel.remove();
+                                    panel = null;
+                                } else {
+                                    panel = document.createElement('div'); {
+                                        panel.classList.add('stlp--fpc--prefsPanel');
+                                        const volGroup = document.createElement('div'); {
+                                            volGroup.classList.add('stlp--fpc--prefsGroup');
+                                            const mute = document.createElement('div'); {
+                                                mute.classList.add('menu_button');
+                                                mute.classList.add('fa-solid', 'fa-fw', extension_settings.landingPage.fpcMute ? 'fa-volume-mute' : 'fa-volume-high');
+                                                mute.title = extension_settings.landingPage.fpcMute ? 'Unmute' : 'Mute';
+                                                mute.addEventListener('click', ()=>{
+                                                    extension_settings.landingPage.fpcMute = !extension_settings.landingPage.fpcMute;
+                                                    mute.title = extension_settings.landingPage.fpcMute ? 'Unmute' : 'Mute';
+                                                    mute.classList.remove(extension_settings.landingPage.fpcMute ? 'fa-volume-high' : 'fa-volume-mute');
+                                                    mute.classList.add(extension_settings.landingPage.fpcMute ? 'fa-volume-mute' : 'fa-volume-high');
+                                                    saveSettingsDebounced();
+                                                });
+                                                volGroup.append(mute);
+                                            }
+                                            const vol = document.createElement('input'); {
+                                                vol.classList.add('text_pole');
+                                                vol.type = 'range';
+                                                vol.min = '0';
+                                                vol.max = '100';
+                                                vol.value = (extension_settings.landingPage.fpcVolume ?? 15).toString();
+                                                vol.addEventListener('input', ()=>{
+                                                    extension_settings.landingPage.fpcVolume = parseInt(vol.value);
+                                                    saveSettingsDebounced();
+                                                });
+                                                volGroup.append(vol);
+                                            }
+                                            panel.append(volGroup);
+                                        }
+                                        const opGroup = document.createElement('div'); {
+                                            opGroup.classList.add('stlp--fpc--prefsGroup');
+                                            const icon = document.createElement('div'); {
+                                                icon.classList.add('menu_button');
+                                                icon.classList.add('fa-solid', 'fa-fw', 'fa-circle-half-stroke');
+                                                icon.title = 'Opacity';
+                                                opGroup.append(icon);
+                                            }
+                                            const opacity = document.createElement('input'); {
+                                                opacity.classList.add('text_pole');
+                                                opacity.type = 'range';
+                                                opacity.min = '0';
+                                                opacity.max = '100';
+                                                opacity.value = (extension_settings.landingPage.fpcOpacity ?? 60).toString();
+                                                opacity.addEventListener('input', ()=>{
+                                                    extension_settings.landingPage.fpcOpacity = parseInt(opacity.value);
+                                                    fpc.canvas.style.opacity = `${opacity.value}%`;
+                                                    saveSettingsDebounced();
+                                                });
+                                                opGroup.append(opacity);
+                                            }
+                                            panel.append(opGroup);
+                                        }
+                                        container.append(panel);
+                                    }
+                                }
+                            });
+                            container.append(prefsTrigger);
+                        }
+                    }
+                });
+            }
             this.dom = container;
         }
 
@@ -331,6 +416,7 @@ export class LandingPage {
     }
     unrender() {
         window.removeEventListener('keydown',this.handleInputBound);
+        this.fpc?.stop();
         this.dom?.remove();
         this.dom = null;
         this.isStartingVideo = false;
