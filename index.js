@@ -47,7 +47,7 @@ export function debounceAsync(func, timeout = 300) {
 
 /**@type {LandingPage} */
 let lp;
-let appReady = false;
+export let appReady = false;
 const onChatChanged = async(chatFile)=>{
     if (chatFile === undefined && extension_settings.landingPage?.isEnabled) {
         log('LANDING');
