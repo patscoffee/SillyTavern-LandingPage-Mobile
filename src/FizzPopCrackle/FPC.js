@@ -86,14 +86,13 @@ export class FPC {
 
 
     async start() {
-        log('FPC', 'start');
         this.isStopping = false;
         await this.loadPromise;
         this.update();
     }
 
     stop() {
-        log('FPC', 'stop');
+        this.isStopping = true;
         this.particleList = [];
     }
 
@@ -101,12 +100,10 @@ export class FPC {
 
 
     update() {
-        log('FPC', 'update...');
         if (this.isStopping) {
             this.isStopping = false;
             return;
         }
-        log('FPC', '      ...updating');
 
         const now = performance.now();
         const deltaTime = now - this.lastFrame;
