@@ -51,7 +51,7 @@ export let appReady = false;
 const onChatChanged = async(chatFile)=>{
     if (chatFile === undefined && extension_settings.landingPage?.isEnabled) {
         log('LANDING');
-        document.querySelector('#sheld').style.display = 'none';
+        document.querySelector('#sheld').style.opacity = '0';
         document.body.append(await lp.render());
         lp.updateBackground();
         if (appReady) {
@@ -63,7 +63,7 @@ const onChatChanged = async(chatFile)=>{
         lp.settings.lastChat.group = getContext().groupId;
         saveSettingsDebounced();
         lp.unrender();
-        document.querySelector('#sheld').style.display = '';
+        document.querySelector('#sheld').style.opacity = '';
     }
 };
 const makeMenuItem = (item) => {

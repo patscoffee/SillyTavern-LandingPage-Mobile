@@ -1,6 +1,6 @@
-import { characters, saveSettingsDebounced } from '../../../../../script.js';
+import { characters, saveSettingsDebounced, this_chid } from '../../../../../script.js';
 import { extension_settings } from '../../../../extensions.js';
-import { groups } from '../../../../group-chats.js';
+import { groups, selected_group } from '../../../../group-chats.js';
 import { executeSlashCommands } from '../../../../slash-commands.js';
 import { debounce, delay, isTrueBoolean } from '../../../../utils.js';
 import { appReady, debounceAsync, log } from '../index.js';
@@ -477,7 +477,7 @@ export class LandingPage {
             this.inputBlocker.style.display = '';
         }
         if (this.settings.isEnabled) {
-            this.sheld.style.display = 'none';
+            this.sheld.style.opacity = '0';
         }
     }
     /**
@@ -494,7 +494,7 @@ export class LandingPage {
             this.isInputting = true;
             // this.chatInput.value += key;
             this.inputBlocker.style.display = 'block';
-            this.sheld.style.display = '';
+            this.sheld.style.opacity = '';
             this.sheld.style.zIndex = '2002';
             this.chatInput.focus();
             // this.sheld.style.alignItems = 'center';
