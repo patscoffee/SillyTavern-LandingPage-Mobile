@@ -52,6 +52,7 @@ const onChatChanged = async(chatFile)=>{
     if (chatFile === undefined && extension_settings.landingPage?.isEnabled) {
         log('LANDING');
         document.querySelector('#sheld').style.opacity = '0';
+        document.querySelector('#sheld').style.pointerEvents = 'none';
         document.body.append(await lp.render());
         lp.updateBackground();
         if (appReady) {
@@ -64,6 +65,7 @@ const onChatChanged = async(chatFile)=>{
         saveSettingsDebounced();
         lp.unrender();
         document.querySelector('#sheld').style.opacity = '';
+        document.querySelector('#sheld').style.pointerEvents = '';
     }
 };
 const makeMenuItem = (item) => {

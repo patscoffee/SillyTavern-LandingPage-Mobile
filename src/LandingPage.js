@@ -478,6 +478,7 @@ export class LandingPage {
         }
         if (this.settings.isEnabled) {
             this.sheld.style.opacity = '0';
+            this.sheld.style.pointerEvents = 'none';
         }
     }
     /**
@@ -495,6 +496,7 @@ export class LandingPage {
             // this.chatInput.value += key;
             this.inputBlocker.style.display = 'block';
             this.sheld.style.opacity = '';
+            this.sheld.style.pointerEvents = '';
             this.sheld.style.zIndex = '2002';
             this.chatInput.focus();
             // this.sheld.style.alignItems = 'center';
