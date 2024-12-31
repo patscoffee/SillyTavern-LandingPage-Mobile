@@ -5,6 +5,7 @@ import { canvasWithContext } from './canvasWithContext.js';
 import { loadImage } from './loadImage.js';
 import { Particle } from './Particle.js';
 import { Sound } from './Sound.js';
+import { TextParticle } from './TextParticle.js';
 
 export class FPC {
     /**@type {HTMLCanvasElement} */ canvas;
@@ -25,6 +26,7 @@ export class FPC {
     /**@type {number} */ delay = 0;
     /**@type {number} */ lastFrame = performance.now();
     /**@type {number} */ lastLaunch = Number.MIN_SAFE_INTEGER;
+    /**@type {number} */ lastText = Number.MIN_SAFE_INTEGER;
 
     /**@type {boolean} */ isStopping = false;
 
@@ -33,6 +35,12 @@ export class FPC {
     /**@type {number} */ fpsTime = 1000 / 30;
 
     /**@type {number[]} */ fpsLog = [30];
+
+
+    /**@type {HTMLCanvasElement} */ textBuffer;
+    /**@type {CanvasRenderingContext2D} */ textBufferContext;
+    /**@type {number} */ fontSize = 125;
+    /**@type {number} */ textHeight;
 
 
 
@@ -44,7 +52,14 @@ export class FPC {
             className: 'stlp--fpc',
         }));
         this.canvas.style.opacity = `${extension_settings.landingPage.fpcOpacity ?? 60}%`;
+
         ({ canvas:this.buffer, context:this.bufferContext } = canvasWithContext());
+
+        this.textHeight = Math.round(this.fontSize * 1.5);
+        ({ canvas:this.textBuffer, context:this.textBufferContext } = canvasWithContext({
+            width: 800,
+            height: this.textHeight,
+        }));
 
         this.sounds.fizz = Sound.create('/scripts/extensions/third-party/SillyTavern-LandingPage/src/FizzPopCrackle/fizz.ogg');
         this.sounds.pop = Sound.create('/scripts/extensions/third-party/SillyTavern-LandingPage/src/FizzPopCrackle/pop.ogg');
@@ -137,6 +152,11 @@ export class FPC {
         if (now - this.lastLaunch > this.delay * (this.quality < 3 ? 2 : 1)) {
             this.delay = Math.random() * 1000 + 100;
             this.lastLaunch = now;
+            if (now - this.lastText > 4000) {
+                const d = new Date();
+                this.launchTextParticle(d.getMonth() > 0 ? d.getFullYear() + 1 : d.getFullYear());
+                this.lastText = now;
+            }
             this.createParticle();
             this.sounds.fizz.play();
         }
@@ -147,7 +167,11 @@ export class FPC {
             if (particle.update(factor)) {
                 this.particleList.splice(idx, 1);
                 if (!particle.usePhysics) {
-                    this.createPop(particle);
+                    if (particle instanceof TextParticle) {
+                        this.createTextPop(particle);
+                    } else {
+                        this.createPop(particle);
+                    }
                     this.sounds.pop.play();
                 }
             }
@@ -175,6 +199,32 @@ export class FPC {
             color || Math.floor(Math.random() * 100) * 12,
             usePhysics,
             cluster,
+        ));
+    }
+
+    launchTextParticle(text) {
+        this.createTextParticle(null, null, null, null, null, text);
+    }
+    createTextParticle(position, target, velocity, color, usePhysics, text) {
+        position = position || {};
+        target = target || {};
+        velocity = velocity || {};
+
+        this.particleList.push(new TextParticle(
+            {
+                x: position.x || this.context.canvas.width * 0.5,
+                y: position.y || this.context.canvas.height + 10,
+            },
+            {
+                y: target.y || 0 + Math.random() * 100,
+            },
+            {
+                x: velocity.x || Math.random() * this.canvas.width / 100 - this.canvas.width / 200,
+                y: velocity.y || 0,
+            },
+            color || Math.floor(Math.random() * 100) * 12,
+            usePhysics,
+            text,
         ));
     }
 
@@ -281,5 +331,36 @@ export class FPC {
                 );
             }
         } while (end != 0);
+    }
+
+    createTextPop(particle) {
+        this.createCirclePop(particle);
+        const text = particle.text;
+        this.textBufferContext.clearRect(0,0, 800,this.textHeight);
+        this.textBufferContext.font = `${this.fontSize}px sans-serif`;
+        this.textBufferContext.fillStyle = 'black';
+        const width = Math.min(800, Math.round(this.textBufferContext.measureText(text).width));
+        this.textBufferContext.fillText(text, 0, this.fontSize, 700);
+        const data = this.textBufferContext.getImageData(0,0, width,this.textHeight).data;
+        for (let y = 0; y < this.textHeight; y += 5) {
+            for (let x = 0; x < width; x += 5) {
+                const idx = (y * width + x) * 4 + 3;
+                if (data[idx]) {
+                    this.createTextParticle(
+                        {
+                            x: particle.position.x - width / 2 + x,
+                            y: particle.position.y - this.textHeight / 2 + y,
+                        },
+                        null,
+                        {
+                            x: particle.velocity.x,
+                            y: particle.velocity.y,
+                        },
+                        particle.color,
+                        true,
+                    );
+                }
+            }
+        }
     }
 }
