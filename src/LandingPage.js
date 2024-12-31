@@ -332,6 +332,7 @@ export class LandingPage {
                     await fpc.loadPromise;
                     container.append(fpc.canvas);
                     while (!appReady) await delay(100);
+                    if (selected_group || this_chid ) return;
                     await delay(1000);
                     await fpc.start();
                     { // prefs

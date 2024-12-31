@@ -1,5 +1,6 @@
 import { extension_settings } from '../../../../../extensions.js';
 import { delay } from '../../../../../utils.js';
+import { log } from '../../index.js';
 import { canvasWithContext } from './canvasWithContext.js';
 import { loadImage } from './loadImage.js';
 import { Particle } from './Particle.js';
@@ -85,13 +86,14 @@ export class FPC {
 
 
     async start() {
-        await this.loadPromise;
+        log('FPC', 'start');
         this.isStopping = false;
+        await this.loadPromise;
         this.update();
     }
 
     stop() {
-        this.isStopping = true;
+        log('FPC', 'stop');
         this.particleList = [];
     }
 
@@ -99,7 +101,12 @@ export class FPC {
 
 
     update() {
-        if (this.isStopping) return;
+        log('FPC', 'update...');
+        if (this.isStopping) {
+            this.isStopping = false;
+            return;
+        }
+        log('FPC', '      ...updating');
 
         const now = performance.now();
         const deltaTime = now - this.lastFrame;
