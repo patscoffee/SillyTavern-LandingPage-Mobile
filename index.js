@@ -65,9 +65,11 @@ const onChatChanged = async(chatFile)=>{
             lp.renderContent();
         }
     } else {
-        lp.settings.lastChat.character = characters[getContext().characterId]?.avatar;
-        lp.settings.lastChat.group = getContext().groupId;
-        saveSettingsDebounced();
+        if (extension_settings.landingPage?.isEnabled) {
+            lp.settings.lastChat.character = characters[getContext().characterId]?.avatar;
+            lp.settings.lastChat.group = getContext().groupId;
+            saveSettingsDebounced();
+        }
         lp.unrender();
         document.querySelector('#sheld').style.opacity = '';
         document.querySelector('#sheld').style.pointerEvents = '';
@@ -528,6 +530,8 @@ const continueLastChat = async()=>{
         }
     }
     toastr.warning('no last chat');
+    lp.fadeIn();
+    lp.dom.querySelector('.stlp--menu')?.classList.remove('stlp--exit');
 };
 registerSlashCommand('lp-continue', ()=>continueLastChat(), [], ' – open the last active chat.', true, true);
 
@@ -571,13 +575,15 @@ registerSlashCommand('lp-set',
 
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'lp-closechat',
     callback: async(args, value)=>{
-        await lp.fadeOut();
-        await onChatChanged();
-        await lp.fadeIn();
-        blockChatChanged = true;
-        eventSource.once(event_types.CHAT_CHANGED, ()=>{
-            blockChatChanged = false;
-        });
+        if (extension_settings.landingPage?.isEnabled) {
+            await lp.fadeOut();
+            await onChatChanged();
+            await lp.fadeIn();
+            blockChatChanged = true;
+            eventSource.once(event_types.CHAT_CHANGED, ()=>{
+                blockChatChanged = false;
+            });
+        }
         document.getElementById('option_close_chat')?.click();
         return '';
     },

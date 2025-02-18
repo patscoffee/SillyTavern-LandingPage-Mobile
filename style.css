@@ -85,9 +85,6 @@ html > body.stlp--hideTopBar:has(.stlp--container) > #top-bar:hover + #top-setti
   background-color: rgba(0 0 0 / 0);
   transition: filter 500ms;
 }
-.stlp--container.stlp--exit {
-  filter: brightness(0);
-}
 .stlp--container > .stlp--intro,
 .stlp--container > .stlp--video {
   display: block;
