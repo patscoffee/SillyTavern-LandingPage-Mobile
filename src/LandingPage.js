@@ -300,9 +300,9 @@ export class LandingPage {
     }
     async fadeIn() {
         if (!this.fader) return;
-        this.fader.classList.remove('stlp--active');
+        this.fader?.classList.remove('stlp--active');
         await delay(410);
-        this.fader.classList.remove('stlp--preactive');
+        this.fader?.classList.remove('stlp--preactive');
     }
 
 
