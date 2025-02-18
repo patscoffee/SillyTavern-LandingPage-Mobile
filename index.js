@@ -2,8 +2,11 @@ import { characters, eventSource, event_types, getRequestHeaders, saveSettingsDe
 import { extension_settings, getContext } from '../../../extensions.js';
 import { groups, openGroupById } from '../../../group-chats.js';
 import { registerSlashCommand } from '../../../slash-commands.js';
-import { getSortableDelay, isTrueBoolean } from '../../../utils.js';
+import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
+import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
+import { delay, getSortableDelay, isTrueBoolean } from '../../../utils.js';
 import { LandingPage } from './src/LandingPage.js';
+import { waitForFrame } from './src/wait.js';
 
 
 
@@ -48,12 +51,14 @@ export function debounceAsync(func, timeout = 300) {
 /**@type {LandingPage} */
 let lp;
 export let appReady = false;
+let blockChatChanged = false;
 const onChatChanged = async(chatFile)=>{
+    if (blockChatChanged) return;
     if (chatFile === undefined && extension_settings.landingPage?.isEnabled) {
         log('LANDING');
         document.querySelector('#sheld').style.opacity = '0';
         document.querySelector('#sheld').style.pointerEvents = 'none';
-        document.body.append(await lp.render());
+        document.body.append(lp.render());
         lp.updateBackground();
         if (appReady) {
             await lp.load();
@@ -563,3 +568,29 @@ registerSlashCommand('lp-set',
     true,
     true,
 );
+
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'lp-closechat',
+    callback: async(args, value)=>{
+        await lp.fadeOut();
+        await onChatChanged();
+        await lp.fadeIn();
+        blockChatChanged = true;
+        eventSource.once(event_types.CHAT_CHANGED, ()=>{
+            blockChatChanged = false;
+        });
+        document.getElementById('option_close_chat')?.click();
+        return '';
+    },
+    helpString: 'Closes the current chat with fade in/out to Landing Page.',
+}));
+
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'lp-exit',
+    callback: async(args, value)=>{
+        lp.dom.querySelector('.stlp--menu')?.classList.add('stlp--exit');
+        const menuAnim = 510 + 100 * lp.dom.querySelectorAll('.stlp--menu > .stlp--item').length;
+        await delay(menuAnim * 0.75);
+        await lp.fadeOut();
+        return '';
+    },
+    helpString: 'Fades out the Landing Page.',
+}));

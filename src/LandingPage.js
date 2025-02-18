@@ -5,6 +5,7 @@ import { executeSlashCommands } from '../../../../slash-commands.js';
 import { debounce, delay, isTrueBoolean } from '../../../../utils.js';
 import { appReady, debounceAsync, log } from '../index.js';
 import { Card } from './Card.js';
+import { waitForFrame } from './wait.js';
 
 export class LandingPage {
     /**@type {Card[]}*/ cards = [];
@@ -12,6 +13,7 @@ export class LandingPage {
     /**@type {Object}*/ settings;
 
     /**@type {HTMLElement}*/ dom;
+    /**@type {HTMLElement}*/ fader;
     /**@type {HTMLVideoElement}*/ video;
     /**@type {HTMLVideoElement}*/ intro;
     /**@type {Boolean}*/ isStartingVideo;
@@ -226,9 +228,9 @@ export class LandingPage {
                         missingBlob = true;
                         this.video.src = url;
                     }
-                    await new Promise(resolve=>{
+                    await new Promise(async(resolve)=>{
                         log('  play intro');
-                        this.intro.src = this.videoCache[baseUrlIntro] ?? urlIntro;
+                        // this.intro.src = this.videoCache[baseUrlIntro] ?? urlIntro;
                         if (this.videoCache[baseUrlIntro]) {
                             log('intro from blob');
                             this.intro.src = this.videoCache[baseUrlIntro];
@@ -237,6 +239,8 @@ export class LandingPage {
                             missingBlob = true;
                             this.intro.src = urlIntro;
                         }
+                        while (!appReady) await delay(100);
+                        this.intro.play();
                         const resolver = ()=>{
                             this.intro.removeEventListener('ended', resolve);
                             this.intro.removeEventListener('error', resolve);
@@ -287,8 +291,33 @@ export class LandingPage {
 
 
 
+    async fadeOut() {
+        if (!this.fader) this.renderFader();
+        this.fader.classList.add('stlp--preactive');
+        await waitForFrame();
+        this.fader.classList.add('stlp--active');
+        await delay(410);
+    }
+    async fadeIn() {
+        if (!this.fader) return;
+        this.fader.classList.remove('stlp--active');
+        await delay(410);
+        this.fader.classList.remove('stlp--preactive');
+    }
 
-    async render() {
+
+
+
+    renderFader() {
+        if (this.fader) return;
+        const fader = document.createElement('div'); {
+            this.fader = fader;
+            fader.classList.add('stlp--fader');
+            document.body.append(fader);
+        }
+    }
+    render() {
+        this.renderFader();
         this.dom?.remove();
         const container = document.createElement('div'); {
             container.classList.add('stlp--container');
@@ -301,7 +330,7 @@ export class LandingPage {
                 intro.classList.add('stlp--intro');
                 intro.loop = false;
                 intro.muted = true;
-                intro.autoplay = true;
+                intro.autoplay = false;
                 intro.addEventListener('play', ()=>log('intro.play'));
                 intro.addEventListener('playing', ()=>log('intro.playing'));
                 container.append(intro);
@@ -416,6 +445,10 @@ export class LandingPage {
         return this.dom;
     }
     unrender() {
+        this.fadeIn().then(()=>{
+            this.fader?.remove();
+            this.fader = null;
+        });
         window.removeEventListener('keydown',this.handleInputBound);
         this.fpc?.stop();
         this.dom?.remove();

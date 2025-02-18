@@ -36,13 +36,41 @@ html > body.stlp--hideTopBar:has(.stlp--container) > #top-bar:hover + #top-setti
     transform: scale(1.1);
   }
   100% {
-    opacity: 1;
+    opacity: var(--stlp--finalOpacity);
+    transform: scale(1);
+  }
+}
+@keyframes stlp--exit {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  70% {
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: var(--stlp--finalOpacity);
     transform: scale(1);
   }
 }
 .stlp--container {
   --stlp--cardHeight: 200px;
   --stlp--cardWidth: calc(var(--stlp--cardHeight) / 144 * 96);
+}
+.stlp--fader {
+  position: fixed;
+  inset: 0;
+  background: black;
+  z-index: 60000;
+  opacity: 0;
+  transition: 400ms;
+  display: none;
+}
+.stlp--fader.stlp--preactive {
+  display: block;
+}
+.stlp--fader.stlp--active {
+  opacity: 1;
 }
 .stlp--container {
   position: absolute;
@@ -55,6 +83,10 @@ html > body.stlp--hideTopBar:has(.stlp--container) > #top-bar:hover + #top-setti
   background-size: cover;
   background-position: center;
   background-color: rgba(0 0 0 / 0);
+  transition: filter 500ms;
+}
+.stlp--container.stlp--exit {
+  filter: brightness(0);
 }
 .stlp--container > .stlp--intro,
 .stlp--container > .stlp--video {
@@ -88,11 +120,173 @@ html > body.stlp--hideTopBar:has(.stlp--container) > #top-bar:hover + #top-setti
   flex-direction: column;
   justify-content: center;
 }
+.stlp--container .stlp--menu.stlp--exit > .stlp--item {
+  animation-name: stlp--exit;
+  animation-direction: reverse;
+  animation-fill-mode: forwards;
+  animation-delay: 0s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(4) {
+  animation-delay: 0.4s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(5) {
+  animation-delay: 0.5s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(6) {
+  animation-delay: 0.6s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(7) {
+  animation-delay: 0.7s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(8) {
+  animation-delay: 0.8s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(9) {
+  animation-delay: 0.9s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(10) {
+  animation-delay: 1s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(11) {
+  animation-delay: 1.1s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(12) {
+  animation-delay: 1.2s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(13) {
+  animation-delay: 1.3s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(14) {
+  animation-delay: 1.4s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(15) {
+  animation-delay: 1.5s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(16) {
+  animation-delay: 1.6s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(17) {
+  animation-delay: 1.7s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(18) {
+  animation-delay: 1.8s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(19) {
+  animation-delay: 1.9s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(20) {
+  animation-delay: 2s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(21) {
+  animation-delay: 2.1s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(22) {
+  animation-delay: 2.2s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(23) {
+  animation-delay: 2.3s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(24) {
+  animation-delay: 2.4s;
+}
+.stlp--container .stlp--menu.stlp--exit > .stlp--item:nth-child(25) {
+  animation-delay: 2.5s;
+}
 .stlp--container .stlp--menu > .stlp--item {
+  --stlp--finalOpacity: 0.5;
   cursor: pointer;
   opacity: 0.5;
   transition: 1200ms;
   padding: 0.25em 2em 0.25em 1em;
+  animation-duration: 0.5s;
+  animation-name: stlp--enter;
+  animation-delay: 0.5s;
+  animation-fill-mode: backwards;
+  animation-timing-function: cubic-bezier(0.26, 0.53, 0.74, 1.48);
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(1) {
+  animation-delay: 0.6s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(2) {
+  animation-delay: 0.7s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(3) {
+  animation-delay: 0.8s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(4) {
+  animation-delay: 0.9s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(5) {
+  animation-delay: 1s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(6) {
+  animation-delay: 1.1s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(7) {
+  animation-delay: 1.2s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(8) {
+  animation-delay: 1.3s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(9) {
+  animation-delay: 1.4s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(10) {
+  animation-delay: 1.5s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(11) {
+  animation-delay: 1.6s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(12) {
+  animation-delay: 1.7s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(13) {
+  animation-delay: 1.8s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(14) {
+  animation-delay: 1.9s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(15) {
+  animation-delay: 2s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(16) {
+  animation-delay: 2.1s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(17) {
+  animation-delay: 2.2s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(18) {
+  animation-delay: 2.3s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(19) {
+  animation-delay: 2.4s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(20) {
+  animation-delay: 2.5s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(21) {
+  animation-delay: 2.6s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(22) {
+  animation-delay: 2.7s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(23) {
+  animation-delay: 2.8s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(24) {
+  animation-delay: 2.9s;
+}
+.stlp--container .stlp--menu > .stlp--item:nth-child(25) {
+  animation-delay: 3s;
 }
 .stlp--container .stlp--menu > .stlp--item:hover {
   opacity: 1;
@@ -115,6 +309,7 @@ html > body.stlp--hideTopBar:has(.stlp--container) > #top-bar:hover + #top-setti
   gap: 2em;
 }
 .stlp--container .stlp--wrapper .stlp--cards > .stlp--cardWrap {
+  --stlp--finalOpacity: 1;
   flex: 0 0 auto;
   animation-duration: 0.5s;
   animation-name: stlp--enter;

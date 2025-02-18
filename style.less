@@ -15,23 +15,23 @@ html > body.stlp--hideTopBar:has(.stlp--container) > {
 
 
 @keyframes stlp--pulse {
-	0% {
-	  filter: saturate(0.5);
-	}
-	50% {
-	  filter: saturate(1.5);
-	}
-	100% {
-	  filter: saturate(0.5);
-	}
-  }
-  .stlp--pulse {
-	animation-name: stlp--pulse;
-	animation-duration: 3s;
-	animation-timing-function: linear;
-	animation-delay: 0s;
-	animation-iteration-count: infinite;
-  }
+    0% {
+        filter: saturate(0.5);
+    }
+    50% {
+        filter: saturate(1.5);
+    }
+    100% {
+        filter: saturate(0.5);
+    }
+}
+.stlp--pulse {
+    animation-name: stlp--pulse;
+    animation-duration: 3s;
+    animation-timing-function: linear;
+    animation-delay: 0s;
+    animation-iteration-count: infinite;
+}
 
 @keyframes stlp--enter {
 	0% {
@@ -42,7 +42,20 @@ html > body.stlp--hideTopBar:has(.stlp--container) > {
 		transform: scale(1.1);
 	}
 	100% {
-		opacity: 1;
+		opacity: var(--stlp--finalOpacity);
+		transform: scale(1);
+	}
+}
+@keyframes stlp--exit {
+	0% {
+		opacity: 0;
+		transform: scale(0.5);
+	}
+	70% {
+		transform: scale(1.1);
+	}
+	100% {
+		opacity: var(--stlp--finalOpacity);
 		transform: scale(1);
 	}
 }
@@ -58,12 +71,29 @@ html > body.stlp--hideTopBar:has(.stlp--container) > {
 
 
 
-.generate-delay(@n, @i: 1) when (@i <= @n) {
+.generate-delay(@n, @base-delay: 0.5s, @offset: 0.1s, @i: 1) when (@i <= @n) {
 	&:nth-child(@{i}) {
-		animation-delay: (0.5s + 0.1s * @i);
+		animation-delay: (@base-delay + @offset * @i);
 	}
-	.generate-delay(@n, (@i + 1));
+	.generate-delay(@n, @base-delay, @offset, (@i + 1));
 }
+
+.stlp--fader {
+    position: fixed;
+    inset: 0;
+    background: black;
+    z-index: 60000;
+    opacity: 0;
+    transition: 400ms;
+    display: none;
+    &.stlp--preactive {
+        display: block;
+    }
+    &.stlp--active {
+        opacity: 1;
+    }
+}
+
 .stlp--container {
 	position: absolute;
 	inset: 0;
@@ -75,6 +105,11 @@ html > body.stlp--hideTopBar:has(.stlp--container) > {
 	background-size: cover;
 	background-position: center;
 	background-color: rgba(0 0 0 / 0);
+    transition: filter 500ms;
+
+    &.stlp--exit {
+        filter: brightness(0);
+    }
 
 	> .stlp--intro, > .stlp--video {
 		display: block;
@@ -106,11 +141,27 @@ html > body.stlp--hideTopBar:has(.stlp--container) > {
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
+        &.stlp--exit {
+            > .stlp--item {
+                animation-name: stlp--exit;
+                animation-direction: reverse;
+                animation-fill-mode: forwards;
+                animation-delay: 0s;
+                .generate-delay(25, 0s);
+            }
+        }
 		> .stlp--item {
+            --stlp--finalOpacity: 0.5;
 			cursor: pointer;
 			opacity: 0.5;
 			transition: 1200ms;
 			padding: 0.25em 2em 0.25em 1em;
+            animation-duration: 0.5s;
+            animation-name: stlp--enter;
+            animation-delay: 0.5s;
+            animation-fill-mode: backwards;
+            animation-timing-function: cubic-bezier(.26, .53, .74, 1.48);
+            .generate-delay(25);
 			&:hover {
 				opacity: 1;
 			}
@@ -140,6 +191,7 @@ html > body.stlp--hideTopBar:has(.stlp--container) > {
 			gap: 2em;
 
 			> .stlp--cardWrap {
+                --stlp--finalOpacity: 1;
 				flex: 0 0 auto;
 				animation-duration: 0.5s;
 				animation-name: stlp--enter;
