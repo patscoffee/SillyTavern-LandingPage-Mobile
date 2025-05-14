@@ -660,3 +660,93 @@ html > body.no-blur .stlp--container .stlp--inputBlocker {
   display: flex;
   align-items: center;
 }
+
+.stlp--container .stlp--wrapper[data-displayStyle="Center"] > .stlp--cards {
+    /* Position - now full height */
+    position: fixed;
+    top: calc(var(--topBarBlockSize) + 10px); /* Account for top bar with 10px gap */
+    bottom: 0;
+    
+    /* Increased left menu offset */
+    left: 35px; /* 2.5x larger than before */
+    width: calc(100vw - 50px);
+    
+    /* Layout */
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    align-content: flex-start;
+    
+    /* Scroll settings */
+    height: calc(100vh - var(--topBarBlockSize) - 10px); /* Adjust height for gap */
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    
+    /* Clean spacing */
+    margin: 0;
+    padding: 0;
+    gap: 0;
+}
+
+/* Hide scrollbar */
+.stlp--container .stlp--wrapper[data-displayStyle="Center"] > .stlp--cards::-webkit-scrollbar {
+    display: none;
+}
+
+/* Card wrap settings */
+.stlp--container .stlp--wrapper[data-displayStyle="Center"] > .stlp--cards > .stlp--cardWrap {
+    margin: 0;
+    padding: 0;
+    line-height: 0;
+}
+
+/* Card settings */
+.stlp--container .stlp--wrapper[data-displayStyle="Center"] > .stlp--cards > .stlp--cardWrap > .stlp--card {
+    margin: 0;
+    padding: 0;
+    line-height: 0;
+}
+
+/* Avatar image settings */
+.stlp--container .stlp--wrapper[data-displayStyle="Center"] > .stlp--cards > .stlp--cardWrap > .stlp--card > .stlp--avatar {
+    display: block;
+    margin: 0;
+    padding: 0;
+    line-height: 0;
+}
+
+/* Centered text with glass effect */
+.stlp--container .stlp--wrapper[data-displayStyle="Center"] > .stlp--cards > .stlp--cardWrap > .stlp--mes {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: var(--sheldWidth);
+    margin: 0;
+    z-index: 2001;
+    
+    /* Glass effect */
+    background: rgba(var(--SmartThemeBodyColor), 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 4px;
+    border: 1px solid rgba(var(--SmartThemeBodyColor), 0.2);
+    padding: 1em;
+}
+
+/* Ensure hover still works */
+.stlp--container .stlp--wrapper[data-displayStyle="Center"] > .stlp--cards > .stlp--cardWrap:hover > .stlp--card {
+    z-index: 2000;
+    position: relative;
+}
+
+/* Hover effects with smooth animation */
+@keyframes cardRaiseAndLower {
+    0% {
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        transform: translateY(-12px) scale(1.02);
+    }
