@@ -687,7 +687,7 @@ html > body.no-blur .stlp--container .stlp--inputBlocker {
     /* Clean spacing */
     margin: 0;
     padding: 0;
-    gap: 0;
+    gap: 0; /* Remove gap between cards */
 }
 
 /* Hide scrollbar */
@@ -697,6 +697,7 @@ html > body.no-blur .stlp--container .stlp--inputBlocker {
 
 /* Card wrap settings */
 .stlp--container .stlp--wrapper[data-displayStyle="Center"] > .stlp--cards > .stlp--cardWrap {
+    width: var(--stlp--cardWidth); /* Ensure consistent width */
     margin: 0;
     padding: 0;
     line-height: 0;
@@ -707,6 +708,7 @@ html > body.no-blur .stlp--container .stlp--inputBlocker {
     margin: 0;
     padding: 0;
     line-height: 0;
+    transform: translateY(0); /* Reset vertical offset */
 }
 
 /* Avatar image settings */
@@ -715,6 +717,9 @@ html > body.no-blur .stlp--container .stlp--inputBlocker {
     margin: 0;
     padding: 0;
     line-height: 0;
+    height: var(--stlp--cardHeight);
+    width: 100%;
+    object-fit: cover; /* Ensure images fill the container without distortion */
 }
 
 /* Centered text with glass effect */
@@ -750,3 +755,7 @@ html > body.no-blur .stlp--container .stlp--inputBlocker {
     50% {
         transform: translateY(-12px) scale(1.02);
     }
+    100% {
+        transform: translateY(0) scale(1);
+    }
+}
